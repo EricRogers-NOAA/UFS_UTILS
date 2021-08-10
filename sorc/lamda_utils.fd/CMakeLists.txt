@@ -1,0 +1,3 @@
+add_subdirectory(create_expanded_restart_files_for_DA.fd)
+add_subdirectory(move_DA_update_data.fd)
+add_subdirectory(prep_for_regional_DA.fd)
