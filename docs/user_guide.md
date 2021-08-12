@@ -59,9 +59,8 @@ https://github.com/NOAA-EMC/UFS_UTILS.
   top and the number of vertical levels. Outputs the 'ak' and 'bk'
   parameters used by the forecast model to define the hybrid levels.
 
-- <a href="lsm_routines/index.html">lsm_routines</a> - Land surface 
-  model-specific routines that are utilised elsewhere within UFS_UTILS.
-  Currently, contains the routines required by global_cycle to 
-  perform data assimilation updates to land model states
-
-
+- <a href="lamda_utils/index.html">lamda_utils</a> - Three codes run
+  during the LAM Data Assimilation cycle whose purpose is to create
+  a 00-h boundary condition file which contains the LAM GSI values 
+  at the lateral boundary points. This helps alleviate mass imbalances
+  in the first few hours of the LAM forecasts.
