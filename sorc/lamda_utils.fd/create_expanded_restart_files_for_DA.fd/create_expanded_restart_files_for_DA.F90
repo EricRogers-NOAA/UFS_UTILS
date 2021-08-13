@@ -30,7 +30,7 @@
 !!
 !! @param[out] num_fields_tracers  Number of tracer arrays
 !! @param[in] field_names_tracers  Names of tracers
-!! @return 0 for success, error code otherwise.
+!!
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine read_field_table(num_fields_tracers,field_names_tracers)
@@ -157,6 +157,7 @@
 !!          (empty files with larger dimensions, to be copied into
 !!           ./RESTART directory before LAM model execution)
 !!
+!! @return 0 for success, error code otherwise
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       program restart_files_for_regional_DA
