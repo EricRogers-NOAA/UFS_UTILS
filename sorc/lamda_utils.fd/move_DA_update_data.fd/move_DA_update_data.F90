@@ -107,7 +107,7 @@
 !! lat:# grid points in S-N direction
 !! lon:#grid points in W-E direction; latp:lat+1; lonp:lon+1                                                                    
 !! len_x:# W-E grid points in integration outside halo (lon-8)
-!! len_y=#N-S grid points in integration outside halo (lat-8)
+!! len_y:#N-S grid points in integration outside halo (lat-8)
 !! length:length of fcst in hours
 !! loc1: boundary file fcst hour (always "000" for this code)         
 !! i,j,k,n,na: do loop counters; istat: status for opening BC file
@@ -1089,7 +1089,7 @@
                                ,dimids_east =(/0,0,0/)                  &
                                ,dimids_west =(/0,0,0/) 
 !
-!> dimids
+!> dimids 
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1306,6 +1306,18 @@
 !! These values will include the blending rows which are extensions
 !! of the actual boundary rows
 !!
+!! @param [in] field: BC field being processed (wind and mass fields)
+!! @param [in] side: Side of domain BC's are being processed
+!! @param [in] nrows_blend: # of blending rows
+!! @param [out] istart_res: Data limits of combined array
+!! @param [out] iend_res: Data limits of combined array
+!! @param [out] jstart_res: Data limits of combined array
+!! @param [out] jend_res: Data limits of combined array
+!! @param [out] istart_bc: Data limits of boundary condition file (i-direction)
+!! @param [out] jstart_bc: Data limits of boundary condition file (j-direction)
+!! @param [out] len_x: Length of the dimensions of the BC file
+!! @param [out] len_y: Length of the dimensions of the BC file
+!! @param [out] var_id_bc: variable ID from BC file
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine get_bc_limits(field,side,nrows_blend                   &
@@ -1538,6 +1550,10 @@
 !< This routine determines the number of tracer arrays in the fv_tracer
 !! restart file and save their names for later use
 !!
+!! @param [in] ncid_tracer_res  File ID of the normal tracer file
+!! @param [in] ncid_bc  File ID of the current BC file
+!! @param [out] num_tracers_bc   The # of tracers in the BC files
+!! @param [inout] varname_tracers_bc  Names of the tracers in the BC files.
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine tracer_info(ncid_tracer_res,ncid_bc                    &
