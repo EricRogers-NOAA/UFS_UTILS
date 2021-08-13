@@ -54,9 +54,8 @@
 !!      the new BC file then include the integration rows that
 !!      correspond to blending rows.
 !-----------------------------------------------------------------------
-
 !!
-
+!! @return 0 for success, error code otherwise.
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
 !-----------------------------------------------------------------------

@@ -31,6 +31,7 @@
 !!         2) sfc_data_new.nc : Surface data file with extra boundary
 !!            rows, input to LAM GSI analysis
 !!
+!! @return 0 for success, error code otherwise.
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !-----------------------------------------------------------------------
       program prep_for_regional_DA
