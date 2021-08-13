@@ -6,12 +6,56 @@
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
 !> This code runs after the LAM GSI analysis. It reads the analysis fv_core, 
-!! fv_tracer files with the extra boundary rows. It updates the 
-!! original restart files with the interior analysis values, and then 
+!! fv_tracer files output from the GSI with the extra boundary rows. It updates the 
+!! original 1st guess restart files with the interior analysis values, and then 
 !! extracts the analysis boundary values, which are written out in 
-!! a new bndy file. This new boundary file will be read into the 
-!! subsequent LAM forecast in the DA cycle if regional_bcs_from_gsi
-!! is set to true in the input.nml file. 
+!! a new bndy file (gfs_bndy.tile7.000_gsi.nc). This new boundary file will 
+!! be read into the subsequent LAM forecast in the DA cycle if  
+!! regional_bcs_from_gsi is set to true in the input.nml file.
+!!
+!! Input: 1) fv_core.res.tile1_new.nc, fv_tracer.res.tile1_new.nc: analysis restart
+!!           files on larger grid w/extra boundary rows
+!!        2) fv_core.res.tile1.nc, fv_tracer.res.tile1.nc: First guess restart
+!!           files on original grid
+!!        3) gfs_bndy.tile7.000.nc : 00-h boundary condition file with GFS/GDAS
+!!           data
+!!
+!! Output : 1) fv_core.res.tile1.nc, fv_tracer.res.tile1.nc: Analysis restart
+!!             files on original grid
+!!          2) gfs_bndy.tile7.000_gsi.nc : 00-h boundary condition file with 
+!!             LAM GSI analysis values 
+!!  
+!! Further details from Tom Black:
+!!
+!!  For insertion of analysis boundary rows back into the BC file, there are
+!!  three very important things to keep in mind.
+!!
+!!  (1) The wind components will be inserted into the BC files
+!!      oriented to the model grid and on model layers but the
+!!      winds in the BC files are oriented to geographic lat/lon
+!!      on levels from the external forecast.  To handle this
+!!      the model will be told to NOT reorient the BC winds or
+!!      do any remapping when using the new BC file.
+!!
+!!  (2) The regional FV3 has delp as a boundary array and that
+!!      quantity is updated by the GSI so it will be copied
+!!      into the new BC file.  Although the interface height
+!!      zh is in the original BC files the layer depth delz
+!!      is a model boundary array so compute delz from the
+!!      updated delp and also write it into the new BC file.
+!!      We will use the hydrostatic approximation to derive
+!!      delz from delp.  We need the surface pressure to
+!!      integrate upward to get z on each side of the domain
+!!      so simply sum delp as we move downward in k from the
+!!      top.
+!!
+!!  (3) Blending data is simply an extension of boundary data.
+!!      When writing data from the enlarged restart files into
+!!      the new BC file then include the integration rows that
+!!      correspond to blending rows.
+!-----------------------------------------------------------------------
+
+!!
 
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
@@ -29,23 +73,23 @@
       implicit none
 !-----------------------------------------------------------------------
 !
-      integer,parameter :: double=selected_real_kind(p=13,r=200)           !<-- Define KIND for double precision real
+      integer,parameter :: double=selected_real_kind(p=13,r=200)           !< Define KIND for double precision real
 !
-      integer,parameter :: halo_integrate=3                                !<-- Halo depth for FV3 integration
+      integer,parameter :: halo_integrate=3                                !< Halo depth for FV3 integration
 !
-      integer,parameter :: ndims_bc=8                                   &  !<-- # of dimensions in the BC files
-                          ,ndims_res=6                                  &  !<-- # of dimensions in the core restart file
-                          ,num_fields_update_core=6                     &  !<-- # of updated fields in the core restart file
-                          ,num_fields_core_bc=6                            !<-- # of core fields copied into the BC files
+      integer,parameter :: ndims_bc=8                                   &  !< # of dimensions in the BC files
+                          ,ndims_res=6                                  &  !< # of dimensions in the core restart file
+                          ,num_fields_update_core=6                     &  !< # of updated fields in the core restart file
+                          ,num_fields_core_bc=6                            !< # of core fields copied into the BC files
 !
-      real,parameter :: ptop=200.                                          !<-- The domain's top pressure (Pa)
-      real,parameter :: grav=9.81                                          !<-- g from fv_diagnostics
-      real,parameter :: rd=287.04                                       &  !<-- rd from fv_diagnostics
-                       ,rv=461.51                                          !<-- rv from fv_diagnostics
-      real,parameter :: f608=rv/rd-1.
-      real,parameter :: rgrav=1./grav
+      real,parameter :: ptop=200.                                          !< The domain's top pressure (Pa)
+      real,parameter :: grav=9.81                                          !< g from fv_diagnostics
+      real,parameter :: rd=287.04                                          !< rd from fv_diagnostics
+      real,parameter :: rv=461.51                                          !< rv from fv_diagnostics
+      real,parameter :: f608=rv/rd-1.                                      !< epsilon(Rv/Rd)-1                           
+      real,parameter :: rgrav=1./grav                                      !< rgrav=1/g            
 !
-      real(kind=double),parameter :: pi_r_180=acos(-1._double)/180._double
+      real(kind=double),parameter :: pi_r_180=acos(-1._double)/180._double  !< pi/180                                  
 !
       integer :: dimid_halo,halo,i,istat,j,k,kend &
                 ,lat,latp,len_x,len_y,length,loc1,lon,lonp &
@@ -58,40 +102,106 @@
                 ,var_id_res,var_id_sphum,var_id_t,var_id_tracer         &
                 ,width_halo_total
 !
-      integer :: istart_bc,iend_bc,jstart_bc,jend_bc
-      integer :: istart_res,iend_res,jstart_res,jend_res
-      integer :: ie_combined,je_combined
+!< dimid_halo:original BC file dimension's ID
+!! halo:original BC file dimension's name
+!! lat:# grid points in S-N direction
+!! lon:#grid points in W-E direction; latp:lat+1; lonp:lon+1                                                                    
+!! len_x:# W-E grid points in integration outside halo (lon-8)
+!! len_y=#N-S grid points in integration outside halo (lat-8)
+!! length:length of fcst in hours
+!! loc1: boundary file fcst hour (always "000" for this code)         
+!! i,j,k,n,na: do loop counters; istat: status for opening BC file
+!! kend=number of vertical layers                  
+!! natts:# attributes for bndy file variable
+!! ncid_bc:Netcdf ID for orig bndy file
+!! ncid_bc_new:Netcdf ID for bndy file with anl
+!! ncid_core_combined:Analysis fv_core file netcdf ID
+!! ncid_core_res:Orig (1st guess) fv_core file netcdf ID                                                     
+!! ncid_tracer_combined:Analysis fv_tracer file netcdf ID
+!! ncid_tracer_res:Orig (1st guess) fv_tracer file netcdf ID
+!! nctype: netcdf file type
+!! ndims: number of dimensions used by variable in    
+!! ngatts: # global attributes in original BC file
+!! nrows_blend: number of blending rows (extensions of actual boundary rows)
+!! nrows_bndry: number of boundary rows (halo depth for FV3 integration+1)
+!! num_vars_bc: number of variables in original boundary file
+!! num_tracers_bc: number of tracers in boundary file
+!! nvars_res, unlimdimid: not used
+!! var_id_bc: variable ID in new boundary file
+!! var_id_delp: variable ID for delp field
+!! var_id_phis: variable ID for phis field
+!! var_id_ps: variable ID for ps (sfc pressure)
+!! var_id_res: place holder for variable ID in loop through
+!!             variables in the analysis restart file (line 253)
+!! var_id_sphum: variable ID for specific humidity
+!! var_id_t: variable ID for temperature
+!! var_id_tracer: placeholder for tracer array variable ID 
+!! width_halo_total: number of boundary plus blending rows
 !
-      integer,dimension(ndims_bc) :: dimid_bc                               !<-- Dimension IDs of the BC file.
-      integer,dimension(ndims_res) :: dimid_core                            !<-- Dimension IDs of the core restart dimensions.
+      integer :: istart_bc,iend_bc,jstart_bc,jend_bc                        !< Data limits in BC file array                                   
+      integer :: istart_res,iend_res,jstart_res,jend_res                    !< Data limits in combined (restart file w/boundary rows added) array
+      integer :: ie_combined,je_combined                                    !< Dimensions of combined (restart file w/boundary rows added) variables            
 !
-      integer,dimension(ndims_bc) :: dimsize_bc                             !<-- Dimensions in the BC file.
-      integer,dimension(ndims_res) :: dimsize_res                       &   !<-- Dimensions of the core restart domain.
-                                     ,dimsize_combined                      !<-- Restart dimensions with bndry rows added.
+!<  The start' and 'end' values above are locations in the
+!!  C-grid boundary rows relative to 1,1 since the values will
+!!  use put_var to write them into the new BC netcdf file.  The
+!!  loop indices start at 2,2 because the BC file arrays have
+!!  4 rows while the field_combined data from the enlarged restart
+!!  file has 3 boundary rows thus the new BC file rows are only
+!!  updated beginning in their 2nd row.
+!!  For C-grid components that lie on the outer edge of the 3rd
+!!  boundary row simply extrapolate from the two adjacent C-grid
+!!  components that have already been computed.
 !
-      real,dimension(:),allocatable :: row4_east,row4_north             &
+      integer,dimension(ndims_bc) :: dimid_bc                               !< Dimension IDs of the BC file.
+      integer,dimension(ndims_res) :: dimid_core                            !< Dimension IDs of the core restart dimensions.
+!
+      integer,dimension(ndims_bc) :: dimsize_bc                             !< Dimensions in the BC file.
+      integer,dimension(ndims_res) :: dimsize_res                       &   !< Dimensions of the core restart domain.
+                                     ,dimsize_combined                      !< Restart dimensions with bndry rows added.
+!
+      real,dimension(:),allocatable :: row4_east,row4_north             &   !< Apparently not used
                                       ,row4_south,row4_west
 !
       real,dimension(:,:),allocatable :: field_combined                 &
                                         ,phis_combined                  &
                                         ,sphum_combined
 !
-      real,dimension(:,:),allocatable,target :: ps_east,ps_north        &
-                                               ,ps_south,ps_west
+!< field_combined: variable arrays from combined (restart+boundary row) file 
+!! phis_combined: geopotential of the sfc array from combined file; 
+!!                used to integrate z upward to compute delz for new boundary
+!!                file
+!! sphum_combined: specific humidity in combined file
 !
-      character(len=3) :: hour
-      character(len=50) :: name_att,name_var
-      character(len=128) :: filename_bc_new='gfs_bndy.tile7.hhh_gsi.nc'           &   !<-- The new BC file on forecast model layers.
-                           ,filename_bc='gfs_bndy.tile7.hhh.nc'                   &   !<-- The original BC file on input model layers.
-                           ,filename_core_combined='fv_core.res.tile1_new.nc'     &
+      real,dimension(:,:),allocatable,target :: ps_east,ps_north        &  !< Surface pressure along east and north boundaries
+                                               ,ps_south,ps_west           !< Surface pressure along south and west boundaries
+!
+      character(len=3) :: hour                                                                               
+      character(len=50) :: name_att,name_var                                                                          
+      character(len=128) :: filename_bc_new='gfs_bndy.tile7.hhh_gsi.nc'           &
+                           ,filename_bc='gfs_bndy.tile7.hhh.nc'                   &
+                           ,filename_core_combined='fv_core.res.tile1_new.nc'     &            
                            ,filename_core_restart='fv_core.res.tile1.nc'          &
                            ,filename_tracer_combined='fv_tracer.res.tile1_new.nc' &
                            ,filename_tracer_restart='fv_tracer.res.tile1.nc' 
 !
-      character(len=25) :: varname_update_bc
+!< hour: Forecast hour, specified in command line, usually "000" 
+!! name_att,name_var: New boundary file variable names, attributes 
+!! filename_bc_new: The new BC file name on forecast model layers.
+!! filename_bc: The original BC file on input model layers.
+!! filename_core_combined: Combined (with extra boundary rows) analysis fv_core
+!!                        restart file
+!! filename_core_restart: Original first guess fv_core restart file, will have
+!!                        analysis values from combined file put into it
+!! filename_tracer_combined: Combined (with extra boundary rows) analysis
+!!                        fv_tracer restart file   
+!! filename_tracer_restart: Original first guess fv_tracer restart file, will have
+!!                        analysis values from combined file put into it
 !
-      character(len=7),dimension(ndims_res) :: dimname_core=(/           &
-                                                              'xaxis_1'  &
+      character(len=25) :: varname_update_bc          !< Variable name character field for use to determine index limits of boundary variables           
+!
+      character(len=7),dimension(ndims_res) :: dimname_core=(/           &   !<Dimension's name from combined fv_core restart file
+                                                              'xaxis_1'  &   
                                                              ,'xaxis_2'  &
                                                              ,'yaxis_1'  &
                                                              ,'yaxis_2'  &
@@ -99,7 +209,15 @@
                                                              ,'Time'     &
                                                                  /)
 !
-      character(len=5),dimension(ndims_bc) :: dimname_bc=(/             &
+!< dimname_core: Dimensions from combined fv_core restart file
+!! xaxis_1: npx (orig x-dimension)+5
+!! xaxis_2: npx (orig x-dimension)+6
+!! yaxis_1: npy (orig y-dimension)+6
+!! yaxis_2: npy (orig y-dimension)+5
+!! zaxis_1: npz (number of vertical levels)
+!! Time: Time variable, usually 1
+!
+      character(len=5),dimension(ndims_bc) :: dimname_bc=(/             &    !< Dimensions set in boundary file
                                                            'lon'        &
                                                           ,'lat'        &
                                                           ,'lonp'       &
@@ -110,27 +228,27 @@
                                                           ,'levp'       &
                                                           /)
 !
-      character(len=4),dimension(num_fields_update_core) :: varname_update_core=(/       &
-                                                                                  'u'    &
-                                                                                 ,'v'    &
-                                                                                 ,'T'    &
-                                                                                 ,'delp' &
-                                                                                 ,'DZ'   &
-                                                                                 ,'W'    &  !<-- Not updated but needed in BC file.
+      character(len=4),dimension(num_fields_update_core) :: varname_update_core=(/       &  !< Variable names in fv_core file
+                                                                                  'u'    &  !< u-wind component
+                                                                                 ,'v'    &  !< v-wind component
+                                                                                 ,'T'    &  !< Temperature
+                                                                                 ,'delp' &  !< Pressure depth of vertical layers
+                                                                                 ,'DZ'   &  !< Height depth of vertical layers
+                                                                                 ,'W'    &  !< dz/dt, not updated but needed in BC file.
                                                                                  /)
 !
-      character(len=5),dimension(num_fields_core_bc) :: varname_update_core_bc=(/       &
-                                                                                 'u'    &
-                                                                                ,'v'    &
-                                                                                ,'t'    & 
-                                                                                ,'delp' &
-                                                                                ,'delz' &
-                                                                                ,'w'    &
+      character(len=5),dimension(num_fields_core_bc) :: varname_update_core_bc=(/       &  !< Variable names in boundary file
+                                                                                 'u'    &  !< u-wind component
+                                                                                ,'v'    &  !< v-wind component
+                                                                                ,'t'    &  !< Temperature
+                                                                                ,'delp' &  !< Pressure depth of vertical layers
+                                                                                ,'delz' &  !< Height depth of vertical layers
+                                                                                ,'w'    &  !< Vertical velocity (dz/dt)
                                                                                 /)
 !
-      character(len=50),dimension(:),allocatable :: varname_tracers_bc
+      character(len=50),dimension(:),allocatable :: varname_tracers_bc   !< Character array for fv_tracer field names
 !
-      logical :: scalar_vbl
+      logical :: scalar_vbl    !< Logical for scalar vs vector field; false for u/v wind component, false for all other field
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -914,9 +1032,16 @@
       contains
 !-----------------------------------------------------------------------
 !
+!! @brief Check status of netcdf file
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!> This routine returns the status of a netcdf file
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine check(status)
 !
-      integer,intent(in) :: status
+      integer,intent(in) :: status    !< netcdf file status
 !
       if(status /= nf90_noerr) then
         print *, trim(nf90_strerror(status))
@@ -929,6 +1054,17 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
+!! @brief Create new BC file with analysis values
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!< This routine creates a new BC file which will have the analysis 
+!! values added, this routine just prepares its dimensions and variables.
+!! The number of layers is one less than in the original BC file
+!! since the top dummy layer is removed.  All fields will be on
+!! the forecast model layers and not input model layers.
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine create_new_bc_file(nrows_blend)
 !
 !-----------------------------------------------------------------------
@@ -938,14 +1074,14 @@
 !***  the forecast model layers and not input model layers.
 !-----------------------------------------------------------------------
 !
-      integer,intent(in) :: nrows_blend                                    !<-- # of blending rows
+      integer,intent(in) :: nrows_blend            !< # of blending rows
 !
 !---------------------
 !***  Local variables
 !---------------------
 !
-      integer :: halo_bc=halo_integrate+1
-      integer :: var_id,var_id_new
+      integer :: halo_bc=halo_integrate+1          !< Halo depth for BC files
+      integer :: var_id,var_id_new                 !< Orig and new bc file variable ID
 !
       integer,dimension(1:3) :: dimids=(/0,0,0/)                        &
                                ,dimids_north=(/0,0,0/)                  &
@@ -1161,6 +1297,15 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
+!! @brief Determine index limits of the boundary variables.
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!< This routine computes the index limits of the boundary variables.
+!! These values will include the blending rows which are extensions
+!! of the actual boundary rows
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine get_bc_limits(field,side,nrows_blend                   &
                               ,istart_res,iend_res,jstart_res,jend_res  &
                               ,istart_bc,jstart_bc,len_x,len_y          &
@@ -1172,10 +1317,10 @@
 !***  actual boundary rows.
 !-----------------------------------------------------------------------
 !
-      integer,intent(in) :: nrows_blend                                    !<-- # of blending rows
+      integer,intent(in) :: nrows_blend                                    !< # of blending rows
 !
-      character(len=5),intent(in) :: side
-      character(len=*),intent(in) :: field
+      character(len=5),intent(in) :: side                                  !< Side of domain BC's are being processed (north,south,west,east)
+      character(len=*),intent(in) :: field                                 !< BC field being processed (wind and mass fields)                                  
 !
       integer,intent(out) :: istart_res,iend_res,jstart_res,jend_res    &
                             ,istart_bc,jstart_bc,len_x,len_y            &
@@ -1378,6 +1523,14 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
+!! @brief Find number of tracer arrays and save their names
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!< This routine determines the number of tracer arrays in the fv_tracer
+!! restart file and save their names for later use
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine tracer_info(ncid_tracer_res,ncid_bc                    &
                             ,num_tracers_bc,varname_tracers_bc)
 !
@@ -1390,13 +1543,13 @@
 !***  Argument variables
 !------------------------
 !
-      integer,intent(in) :: ncid_tracer_res                             &  !<-- File ID of the normal tracer file.
-                           ,ncid_bc                                        !<-- File ID of the current BC file.
+      integer,intent(in) :: ncid_tracer_res                             &  !< File ID of the normal tracer file.
+                           ,ncid_bc                                        !< File ID of the current BC file.
 !
       character(len=50),dimension(:),allocatable,intent(inout) ::       &
-                                                    varname_tracers_bc     !<-- Names of the tracers in the BC files.
+                                                    varname_tracers_bc     !< Names of the tracers in the BC files.
 !
-      integer,intent(out) :: num_tracers_bc                                !<-- The # of tracers in the BC files.
+      integer,intent(out) :: num_tracers_bc                                !< The # of tracers in the BC files.
 !
 !---------------------
 !***  Local variables
@@ -1404,16 +1557,21 @@
 !
       integer :: n,nn,num_bc_vbls,num_tracer_vbls,num_tracers_res
 !
-      character(len=50) :: tracer_name
+!< n,nn: Do loop variables
+!! num_bc_vbls: Total # of tracers in BC file
+!! num_tracer_vbls: Total # of tracers in tracer restart file
+!! num_tracers_res: Dimensions of tracer restart file (1st 4 variables)
 !
-      character(len=50),dimension(:),allocatable :: bc_vbl_names
+      character(len=50) :: tracer_name                                     !< Tracer name in the tracer restart file
+!
+      character(len=50),dimension(:),allocatable :: bc_vbl_names           !< Tracer name in BC file
 !
       type linked_list
-        character(len=50) :: save_name
+        character(len=50) :: save_name                                     !< save_name: holder for saved BC file tracer names
         type(linked_list),pointer :: next_link
       end type linked_list
 !
-      type(linked_list),pointer :: hold_bc_tracer_name                  &
+      type(linked_list),pointer :: hold_bc_tracer_name                  &  !< Placeholder for saved tracer variable name                     
                                   ,head,tail
 !
 !-----------------------------------------------------------------------
@@ -1514,6 +1672,14 @@
 !-----------------------------------------------------------------------
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
+!! @brief Compute layer thicknesses in new boundary file
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!<  Given delp and T from the updated combined core restart file
+!!  and sphum from the tracer file, this routine computes the layer
+!!  thicknesses and writes them to the new BC file.
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine write_delz_to_bc_file(side,nrows_blend)
 !
@@ -1527,9 +1693,9 @@
 !***  Argument variables
 !------------------------
 !
-      integer,intent(in) :: nrows_blend                                     !<-- # of blending rows
+      integer,intent(in) :: nrows_blend                                     !< # of blending rows
 !
-      character(len=5),intent(in) :: side                                   !<-- Current side of the domain
+      character(len=5),intent(in) :: side                                   !< Current side of the domain
 !
 !--------------------
 !*** Local variables
@@ -1761,6 +1927,15 @@
 !-----------------------------------------------------------------------
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
+!! @brief Compute C-grid winds in boundary rows
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!<  The GSI updates the D-grid winds but the BC file also needs the
+!!  C-grid winds. This routine computes the C-grid winds in the boundary
+!!  rows by interpolating from the D-grid winds and writes them into the 
+!!  BC file.
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine dgrid_to_cgrid(var)
 !
@@ -1775,7 +1950,7 @@
 !***  Argument variables
 !------------------------
 !
-      character(len=1),intent(in) :: var
+      character(len=1),intent(in) :: var              !< Variable name (u or v)                         
 !
 !--------------------
 !*** Local variables

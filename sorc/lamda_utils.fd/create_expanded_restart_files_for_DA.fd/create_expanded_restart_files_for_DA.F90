@@ -1,18 +1,9 @@
 !> @file
-!! @brief Read input.nml to get nx,ny and field_table to get 
-!! number of tracers in fv_tracer restart file
+!! @brief Read field_table 
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
-!> Reads input.nml file to get LAM grid dimensions and field_table
-!! to get the number of tracers for this code to create empty fv_core
-!! and fv_tracer restart files with larger dimensions (extra boundary 
-!! rows). This code runs before the LAM model execution in the DA cycle,
-!! and is part of the  procedure to put the GSI analysis into the 
-!! the 00-h LAM boundary condition file. These empty fv_tracer, fv_core 
-!! are copied into the RESTART directory at model run time, and are
-!! populated with valid values at the end of the LAM forecast
-!! f write_restart_with_bcs = true in the in the input.nml file.
-!! in the input.nml file.
+!> This module reads the field_table to get a list of
+!! the number of tracers used.
 !!
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !-----------------------------------------------------------------------
@@ -31,6 +22,14 @@
 !
 !-----------------------------------------------------------------------
 !
+!! @brief Read field_table
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!> This routine does simple reads of field_table to get 
+!! the number of tracers in the fv_tracer restart file.
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine read_field_table(num_fields_tracers,field_names_tracers)
 !
 !-----------------------------------------------------------------------
@@ -46,17 +45,19 @@
 !***  Argument variables
 !------------------------
 !
-      character(len=100),dimension(:),allocatable,intent(inout) :: field_names_tracers
+      character(len=100),dimension(:),allocatable,intent(inout) :: field_names_tracers !< Names of tracers
 !
-      integer,intent(out) :: num_fields_tracers
+      integer,intent(out) :: num_fields_tracers !< Number of tracer arrays from field_table        
 !
 !---------------------
 !***  Local variables
 !---------------------
 !
-      integer :: ierr,kount,n,n_end,n_start
+      integer :: ierr,kount,n,n_end,n_start !< ierr : error condition
+                                            !! kount : counting variable for # of tracers               
+                                            !! n,n_nstart,n_end : Variables for # characters in variable name                 
 !
-      character(len=100) :: line,line_name
+      character(len=100) :: line,line_name !< Parsing variables for reading field_table              
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -134,6 +135,27 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !
+!< @brief Read input.nml to get nx,ny,nz and field_table to get
+!! number of tracers in fv_tracer restart file
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!> Reads input.nml file to get LAM grid dimensions and field_table
+!! to get the number of tracers for this code to create empty fv_core
+!! and fv_tracer restart files with larger dimensions (extra boundary
+!! rows). This code runs before the LAM model execution in the DA cycle,
+!! and is part of the  procedure to put the GSI analysis into the
+!! the 00-h LAM boundary condition file. These empty fv_tracer, fv_core
+!! are copied into the RESTART directory at model run time, and are
+!! populated with valid values at the end of the LAM forecast
+!! if write_restart_with_bcs = true in the input.nml file.
+!!
+!! Input : input.nml, field_table
+!! Output : fv_core.res.tile1_new.nc, fv_tracer.res.tile1_new.nc
+!!          (empty files with larger dimensions, to be copied into
+!!           ./RESTART directory before LAM model execution)
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       program restart_files_for_regional_DA
 !
 !-----------------------------------------------------------------------
@@ -151,58 +173,61 @@
       implicit none
 !-----------------------------------------------------------------------
 !
-      integer,parameter :: num_dims_core=6                              &  !<-- # of dimensions in the core restart file
-                          ,num_dims_tracers=4                           &  !<-- # of dimensions in tracer restart file
-                          ,num_fields_core=7                               !<-- # of fields in the core restart file
+      integer,parameter :: num_dims_core=6                              &  !< # of dimensions in the core restart file
+                          ,num_dims_tracers=4                           &  !< # of dimensions in tracer restart file
+                          ,num_fields_core=7                               !< # of fields in the core restart file
 !
-      integer,parameter :: halo=3                                          !<-- # of halo rows used by the integration
+      integer,parameter :: halo=3                                          !< # of halo rows used by the integration
 !
-      integer :: num_fields_tracers=0
+      integer :: num_fields_tracers=0                                      !< Initialize tracer counter array 
 !
-      integer :: i,iend_new,istart_new,j,jend_new,jstart_new,k,kend     &
-                ,kount,npx,npy,npz
+      integer :: i,iend_new,istart_new,j,jend_new,jstart_new,k,kend     &  !< Array start/end indices for i,j,k
+                ,kount,npx,npy,npz                                         !! npx=#W-E points, npy=#S-N points, npz=#vertical levels
 !
-      integer :: dimid,n,na,nd,ndims,nctype,nvars,var_id
+      integer :: dimid,n,na,nd,ndims,nctype,nvars,var_id                   !< dimid: dimensions of original restart files        
+                                                                           !! n: do loop counter for num_dims_core                
+                                                                           !! var_id: variable counter number for fv_core variables  
 !
-      integer :: ncid_core_new,ncid_tracer_new
+      integer :: ncid_core_new,ncid_tracer_new                             !< ncid_core_new: counter for variables in new fv_core file
+                                                                           !! ncid_tracer_new: counter for variables in new fv_tracers file 
 !
-      integer,dimension(1:num_dims_core) :: dim_lengths_core               !<-- Hold the dimension lengths for the core restart file
-      integer,dimension(1:num_dims_tracers) :: dim_lengths_tracers         !<-- Hold the dimension lengths for the tracers restart file
+      integer,dimension(1:num_dims_core) :: dim_lengths_core               !< Hold the dimension lengths for the core restart file
+      integer,dimension(1:num_dims_tracers) :: dim_lengths_tracers         !< Hold the dimension lengths for the tracers restart file
 !
-      integer,dimension(:),allocatable :: dimids
+      integer,dimension(:),allocatable :: dimids                           !< Dimensions of larger restart files                      
 !
-      real,dimension(:,:),allocatable :: field
+!     real,dimension(:,:),allocatable :: field 
 !
-      character(len=50) :: filename_core_restart_new='fv_core.res.tile1_new.nc'    & !<-- The new core restart file with boundary rows.
-                          ,filename_tracer_restart_new='fv_tracer.res.tile1_new.nc'  !<-- The new tracer restart file with boundary rows.
+      character(len=50) :: filename_core_restart_new='fv_core.res.tile1_new.nc'    & !< The new core restart file with boundary rows.
+                          ,filename_tracer_restart_new='fv_tracer.res.tile1_new.nc'  !< The new tracer restart file with boundary rows.
 !
       character(len=9),dimension(num_dims_core) :: dim_names_core=(/           &
-                                                                    'xaxis_1'  &  !<-- npx-1
-                                                                   ,'xaxis_2'  &  !<-- npx
-                                                                   ,'yaxis_1'  &  !<-- npy
-                                                                   ,'yaxis_2'  &  !<-- npy-1
-                                                                   ,'zaxis_1'  &  !<-- npz
-                                                                   ,'Time   '  &
+                                                                    'xaxis_1'  &  !< npx-1
+                                                                   ,'xaxis_2'  &  !< npx
+                                                                   ,'yaxis_1'  &  !< npy
+                                                                   ,'yaxis_2'  &  !< npy-1
+                                                                   ,'zaxis_1'  &  !< npz
+                                                                   ,'Time   '  &  !< Time array, always 1
                                                                    /)
 !
       character(len=9),dimension(num_dims_tracers) :: dim_names_tracers=(/           &
-                                                                          'xaxis_1'  &  !<-- npx-1
-                                                                         ,'yaxis_1'  &  !<-- npy-1
-                                                                         ,'zaxis_1'  &  !<-- npz
-                                                                         ,'Time   '  &
+                                                                          'xaxis_1'  &  !< npx-1
+                                                                         ,'yaxis_1'  &  !< npy-1
+                                                                         ,'zaxis_1'  &  !< npz
+                                                                         ,'Time   '  &  !< Time array, always 1
                                                                          /)
 !
-      character(len=4),dimension(1:num_fields_core) :: field_names_core=(/        &
-                                                                          'u   '  &
-                                                                         ,'v   '  &
-                                                                         ,'W   '  &
-                                                                         ,'DZ  '  &
-                                                                         ,'T   '  &
-                                                                         ,'delp'  &
-                                                                         ,'phis'  &
+      character(len=4),dimension(1:num_fields_core) :: field_names_core=(/        &     !< Names of variables in fv_core file
+                                                                          'u   '  &     !! u: u-component of wind
+                                                                         ,'v   '  &     !! v: v-component of wind
+                                                                         ,'W   '  &     !! W: vertical motion (dz/dt)
+                                                                         ,'DZ  '  &     !! DZ: thickness of layers (in meters)
+                                                                         ,'T   '  &     !! T: Temperatures
+                                                                         ,'delp'  &     !! delp: pressure thickness of layers
+                                                                         ,'phis'  &     !! Geopotential of the surface
                                                                          /)
 !
-      character(len=100),dimension(:),allocatable :: field_names_tracers
+      character(len=100),dimension(:),allocatable :: field_names_tracers                !< Array with names of tracers
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -395,9 +420,16 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
+!! @brief Check status of netcdf file
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!> This routine returns the status of a netcdf file
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine check(status)
 !
-      integer,intent(in) :: status
+      integer,intent(in) :: status                   !< netcdf file status
 !
       if(status /= nf90_noerr) then
         print *, trim(nf90_strerror(status))
@@ -410,6 +442,14 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
+!! @brief Extract data from namelist
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
+!> This routine extracts the grid dimensions from the model 
+!! input.nml namelist
+!!
+!! @authors Tom Black, Eric Rogers NCEP/EMC
+
       subroutine extract_from_namelist(name,value)
 !
 !-----------------------------------------------------------------------
@@ -423,17 +463,20 @@
 !***  Argument variables
 !------------------------
 !
-      character(len=*),intent(in) :: name
+      character(len=*),intent(in) :: name        !< Variable name in input.nml file
 !
-      integer,intent(out) :: value
+      integer,intent(out) :: value               !< Variable name setting in input.nml file
 !
 !---------------------
 !***  Local variables
 !---------------------
 !
-      integer :: ierr, n_start
+      integer :: ierr, n_start                   !< ierr: error condition reading input.nml
+                                                 !! nstart: location of equal sign in input.nml line
 !
-      character(len=100) :: line,line_int
+      character(len=100) :: line,line_int        !< line: Line in input.nml file with desired variable                           
+                                                 !! (npx, npy, and npz)
+                                                 !! line_int: value of desired variable from input.nml file
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
