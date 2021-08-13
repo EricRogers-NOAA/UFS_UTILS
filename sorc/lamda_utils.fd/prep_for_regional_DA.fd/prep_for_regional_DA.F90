@@ -31,7 +31,6 @@
 !!         2) sfc_data_new.nc : Surface data file with extra boundary
 !!            rows, input to LAM GSI analysis
 !!
-
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !-----------------------------------------------------------------------
       program prep_for_regional_DA
@@ -567,6 +566,7 @@
 
 !> This routine returns the status of a netcdf file
 !!
+!! @param[in] status  netcdf file status
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine check(status)

@@ -28,6 +28,8 @@
 !> This routine does simple reads of field_table to get 
 !! the number of tracers in the fv_tracer restart file.
 !!
+!! @param[out] num_fields_tracers  Number of tracer arrays
+!! @param[in] field_names_tracers  Names of tracers
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine read_field_table(num_fields_tracers,field_names_tracers)
@@ -135,7 +137,7 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 !
-!< @brief Read input.nml to get nx,ny,nz and field_table to get
+!! @brief Read input.nml to get nx,ny,nz and field_table to get
 !! number of tracers in fv_tracer restart file
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
@@ -425,6 +427,7 @@
 
 !> This routine returns the status of a netcdf file
 !!
+!! @param[in] status  netcdf file status
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine check(status)
@@ -448,6 +451,8 @@
 !> This routine extracts the grid dimensions from the model 
 !! input.nml namelist
 !!
+!! @param[in] name  Variable name in input.nml file
+!! @param[out] value  Variable name setting in input.nml file
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
       subroutine extract_from_namelist(name,value)
