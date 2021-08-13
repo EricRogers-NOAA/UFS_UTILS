@@ -1037,8 +1037,8 @@
 
 !> This routine returns the status of a netcdf file
 !!
+!! @param[in] status  netcdf file status
 !! @authors Tom Black, Eric Rogers NCEP/EMC
-
       subroutine check(status)
 !
       integer,intent(in) :: status    !< netcdf file status
@@ -1064,7 +1064,6 @@
 !! the forecast model layers and not input model layers.
 !!
 !! @authors Tom Black, Eric Rogers NCEP/EMC
-
       subroutine create_new_bc_file(nrows_blend)
 !
 !-----------------------------------------------------------------------
@@ -1306,20 +1305,19 @@
 !! These values will include the blending rows which are extensions
 !! of the actual boundary rows
 !!
-!! @param [in] field: BC field being processed (wind and mass fields)
-!! @param [in] side: Side of domain BC's are being processed
-!! @param [in] nrows_blend: # of blending rows
-!! @param [out] istart_res: Data limits of combined array
-!! @param [out] iend_res: Data limits of combined array
-!! @param [out] jstart_res: Data limits of combined array
-!! @param [out] jend_res: Data limits of combined array
-!! @param [out] istart_bc: Data limits of boundary condition file (i-direction)
-!! @param [out] jstart_bc: Data limits of boundary condition file (j-direction)
-!! @param [out] len_x: Length of the dimensions of the BC file
-!! @param [out] len_y: Length of the dimensions of the BC file
-!! @param [out] var_id_bc: variable ID from BC file
+!! @param[in] field  BC field being processed (wind and mass fields)
+!! @param[in] side  Side of domain BC's are being processed
+!! @param[in] nrows_blend  Number of blending rows
+!! @param[out] istart_res  Data limits of combined array (i-direction start)
+!! @param[out] iend_res  Data limits of combined array (i-direction end)
+!! @param[out] jstart_res  Data limits of combined array (j-direction start)
+!! @param[out] jend_res  Data limits of combined array (j-direction end)
+!! @param[out] istart_bc  Data limits of boundary condition file (i-direction)
+!! @param[out] jstart_bc  Data limits of boundary condition file (j-direction)
+!! @param[out] len_x  Length of the dimensions of the BC file (x)
+!! @param[out] len_y  Length of the dimensions of the BC file (y)
+!! @param[out] var_id_bc  variable ID from BC file
 !! @authors Tom Black, Eric Rogers NCEP/EMC
-
       subroutine get_bc_limits(field,side,nrows_blend                   &
                               ,istart_res,iend_res,jstart_res,jend_res  &
                               ,istart_bc,jstart_bc,len_x,len_y          &
@@ -1550,12 +1548,12 @@
 !< This routine determines the number of tracer arrays in the fv_tracer
 !! restart file and save their names for later use
 !!
-!! @param [in] ncid_tracer_res  File ID of the normal tracer file
-!! @param [in] ncid_bc  File ID of the current BC file
-!! @param [out] num_tracers_bc   The # of tracers in the BC files
-!! @param [inout] varname_tracers_bc  Names of the tracers in the BC files.
+!! @param[in] ncid_tracer_res  File ID of the normal tracer file
+!! @param[in] ncid_bc  File ID of the current BC file
+!! @param[out] num_tracers_bc   The # of tracers in the BC files
+!! @param[out] varname_tracers_bc  Names of the tracers in the BC files.
 !! @authors Tom Black, Eric Rogers NCEP/EMC
-
+!
       subroutine tracer_info(ncid_tracer_res,ncid_bc                    &
                             ,num_tracers_bc,varname_tracers_bc)
 !
@@ -1704,6 +1702,8 @@
 !!  and sphum from the tracer file, this routine computes the layer
 !!  thicknesses and writes them to the new BC file.
 !!
+!! @param[in] nrows_blend  Number of blending rows
+!! @param[in] side  Current side of the domain (north, south, east, or west)
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine write_delz_to_bc_file(side,nrows_blend)
@@ -1972,6 +1972,7 @@
 !!  boundary row simply extrapolate from the two adjacent C-grid
 !!  components that have already been computed.
 !!
+!! @param[in] var  Wind variable (u or v-component)
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine dgrid_to_cgrid(var)
