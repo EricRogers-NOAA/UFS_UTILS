@@ -140,7 +140,7 @@
 !
       integer :: istart_bc,iend_bc,jstart_bc,jend_bc                        !< Data limits in BC file array                                   
       integer :: istart_res,iend_res,jstart_res,jend_res                    !< Data limits in combined (restart file w/boundary rows added) array
-      integer :: ie_combined,je_combined                                    !< Dimensions of combined (restart file w/boundary rows added) variables            
+      integer :: ie_combined,je_combined                                    !< Dimensions of combined (restart file w/boundary rows added) variables
 !
 !<  The start' and 'end' values above are locations in the
 !!  C-grid boundary rows relative to 1,1 since the values will
@@ -1089,6 +1089,8 @@
                                ,dimids_east =(/0,0,0/)                  &
                                ,dimids_west =(/0,0,0/) 
 !
+!> dimids
+!
 !-----------------------------------------------------------------------
 !***********************************************************************
 !-----------------------------------------------------------------------
@@ -1320,11 +1322,18 @@
       integer,intent(in) :: nrows_blend                                    !< # of blending rows
 !
       character(len=5),intent(in) :: side                                  !< Side of domain BC's are being processed (north,south,west,east)
-      character(len=*),intent(in) :: field                                 !< BC field being processed (wind and mass fields)                                  
+      character(len=*),intent(in) :: field                                 !< BC field being processed (wind and mass fields)                      
 !
       integer,intent(out) :: istart_res,iend_res,jstart_res,jend_res    &
                             ,istart_bc,jstart_bc,len_x,len_y            &
                             ,var_id_bc
+!
+!< istart_res,iend_res,jstart_res,jend_res: Data limits of combined array
+!!   including the BC/integration line
+!! istart_bc,jstart_bc: Data limits of boundary condition file
+!!   including the BC/integration line
+!! len_x, len_y: Length of the dimensions of the BC file
+!! var_id_bc: variable ID from BC file
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1935,6 +1944,18 @@
 !!  rows by interpolating from the D-grid winds and writes them into the 
 !!  BC file.
 !!
+!!  The following 'start' and 'end' values are locations in the
+!!  C-grid boundary rows relative to 1,1 since the values will
+!!  use put_var to write them into the new BC netcdf file.  The
+!!  loop indices start at 2,2 because the BC file arrays have
+!!  4 rows while the field_combined data from the enlarged restart
+!!  file has 3 boundary rows thus the new BC file rows are only
+!!  updated beginning in their 2nd row.
+!!
+!!  For C-grid components that lie on the outer edge of the 3rd
+!!  boundary row simply extrapolate from the two adjacent C-grid
+!!  components that have already been computed.
+!!
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 !
       subroutine dgrid_to_cgrid(var)
@@ -1957,12 +1978,28 @@
 !--------------------
 !
       integer :: i,ix,j,jx,var_id
+!
+!< i,ix,j,jx: do loop variables
+!! var_id : Netcdf variable ID in boundary condition file
+!
       integer :: istart_bc,jstart_bc,len_x,len_y
+!
+!< istart_bc, jstart_bc: starting location of C-grid boundary rows
+!! relative to (1,1)
 !
       real,dimension(:,:),allocatable :: uc_east,uc_north               &
                                         ,uc_south,uc_west               &
                                         ,vc_east,vc_north               &
                                         ,vc_south,vc_west
+!
+!< uc_east: C-grid u-component on east boundary
+!! uc_west: C-grid u-component on west boundary
+!! uc_north: C-grid u-component on north boundary
+!! uc_south: C-grid u-component on south boundary
+!! vc_east: C-grid v-component on east boundary
+!! vc_west: C-grid v-component on west boundary
+!! vc_north: C-grid v-component on north boundary
+!! vc_south: C-grid v-component on south boundary
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
