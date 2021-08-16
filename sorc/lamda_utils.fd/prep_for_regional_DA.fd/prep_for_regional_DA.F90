@@ -562,9 +562,6 @@
       contains
 !-----------------------------------------------------------------------
 !
-!! @brief Check status of netcdf file
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine returns the status of a netcdf file
 !!
 !! @param[in] status  netcdf file status

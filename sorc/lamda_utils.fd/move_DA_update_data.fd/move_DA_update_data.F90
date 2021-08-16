@@ -53,6 +53,7 @@
 !!      When writing data from the enlarged restart files into
 !!      the new BC file then include the integration rows that
 !!      correspond to blending rows.
+!!
 !!----------------------------------------------------------------------
 !! @return 0 for success, error code otherwise.
 !! @authors Tom Black, Eric Rogers NCEP/EMC
@@ -1030,9 +1031,6 @@
       contains
 !-----------------------------------------------------------------------
 !
-!! @brief Check status of netcdf file
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine returns the status of a netcdf file
 !!
 !! @param[in] status  netcdf file status
@@ -1052,9 +1050,6 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
-!! @brief Create new BC file with analysis values
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine creates a new BC file which will have the analysis 
 !! values added, this routine just prepares its dimensions and variables.
 !! The number of layers is one less than in the original BC file
@@ -1297,9 +1292,6 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
-!! @brief Determine index limits of the boundary variables.
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine computes the index limits of the boundary variables.
 !! These values will include the blending rows which are extensions
 !! of the actual boundary rows
@@ -1544,9 +1536,6 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
-!! @brief Find number of tracer arrays and save their names
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine determines the number of tracer arrays in the fv_tracer
 !! restart file and save their names for later use
 !!
@@ -1701,9 +1690,6 @@
 !-----------------------------------------------------------------------
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
-!! @brief Compute layer thicknesses in new boundary file
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !>  Given delp and T from the updated combined core restart file
 !!  and sphum from the tracer file, this routine computes the layer
 !!  thicknesses and writes them to the new BC file.
@@ -1957,9 +1943,6 @@
 !-----------------------------------------------------------------------
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
-!! @brief Compute C-grid winds in boundary rows
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !>  The GSI updates the D-grid winds but the BC file also needs the
 !!  C-grid winds. This routine computes the C-grid winds in the boundary
 !!  rows by interpolating from the D-grid winds and writes them into the 

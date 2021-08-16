@@ -1,5 +1,7 @@
 !> @file
-!! @brief Read field_table 
+!
+!! @brief The code reads input.nml to get nx,ny,nz and field_table to get
+!! number of tracers in the fv_tracer restart file
 !! @authors Tom Black, Eric Rogers NCEP/EMC
 
 !> This module reads the field_table to get a list of
@@ -22,8 +24,6 @@
 !
 !-----------------------------------------------------------------------
 !
-!! @brief Read field_table
-!! @authors Tom Black, Eric Rogers NCEP/EMC
 
 !> This routine does simple reads of field_table to get 
 !! the number of tracers in the fv_tracer restart file.
@@ -424,9 +424,6 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
-!! @brief Check status of netcdf file
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine returns the status of a netcdf file
 !!
 !! @param[in] status  netcdf file status
@@ -447,9 +444,6 @@
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
-!! @brief Extract data from namelist
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-
 !> This routine extracts the grid dimensions from the model 
 !! input.nml namelist
 !!
