@@ -1337,12 +1337,15 @@
                             ,istart_bc,jstart_bc,len_x,len_y            &
                             ,var_id_bc
 !
-!< istart_res,iend_res,jstart_res,jend_res: Data limits of combined array
-!!   including the BC/integration line
-!! istart_bc,jstart_bc: Data limits of boundary condition file
-!!   including the BC/integration line
-!! len_x, len_y: Length of the dimensions of the BC file
-!! var_id_bc: variable ID from BC file
+!< istart_res: Data limits of combined array (i-direction start)
+!< iend_res: Data limits of combined array (i-direction end)
+!< jstart_res,jend_res: Data limits of combined array (j-direction start)
+!< jend_res: Data limits of combined array (j-direction end)
+!< istart_bc: Data limits of boundary condition file
+!< jstart_bc: Data limits of boundary condition file
+!< len_x: Length of the dimensions of the BC file
+!< len_y: Length of the dimensions of the BC file
+!< var_id_bc: variable ID from BC file
 !
 !-----------------------------------------------------------------------
 !***********************************************************************
@@ -1351,57 +1354,57 @@
       if(trim(field)=='u')then
 !
         if(side=='north')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=1                                     !   including the BC/integration line.
-          jend_res=halo_integrate+nrows_blend+1            !<--
+          jend_res=halo_integrate+nrows_blend+1            !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(1)+1                    !   Data limits in the BC file array
           jstart_bc=2                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend     !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend     !--
 !
           varname_update_bc=trim(field)//'_s_bottom'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='south')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=dimsize_combined(3)-halo_integrate-nrows_blend    !   including the BC/integration line.
-          jend_res=dimsize_combined(3)                     !<--
+          jend_res=dimsize_combined(3)                     !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(1)+1                    !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend     !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend     !--
 !
           varname_update_bc=trim(field)//'_s_top'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='east')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=halo_integrate+nrows_blend              !   Data limits in the combined array
           jstart_res=halo_integrate+2                      !   including the BC/integration line.
-          jend_res=dimsize_combined(3)-4                   !<--
+          jend_res=dimsize_combined(3)-4                   !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=halo_integrate+nrows_blend+1             !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(3)-2*halo_integrate-2   !<--
+          jend_bc=dimsize_combined(3)-2*halo_integrate-2   !--
 !
           varname_update_bc=trim(field)//'_s_left'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='west')then
-          istart_res=dimsize_combined(1)-halo_integrate-nrows_blend+1  !<--
+          istart_res=dimsize_combined(1)-halo_integrate-nrows_blend+1  !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=halo_integrate+2                      !   including the BC/integration line.
-          jend_res=dimsize_combined(3)-4                   !<--
+          jend_res=dimsize_combined(3)-4                   !--
 !
-          istart_bc=1                                      !<--
+          istart_bc=1                                      !--
           iend_bc=istart_bc+halo_integrate+nrows_blend-1   !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(3)-2*halo_integrate-2   !<--
+          jend_bc=dimsize_combined(3)-2*halo_integrate-2   !--
 !
           varname_update_bc=trim(field)//'_s_right'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
@@ -1411,117 +1414,117 @@
       elseif(trim(field)=='v')then
 !
         if(side=='north')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(2)                     !   Data limits in the combined array
           jstart_res=1                                     !   including the BC/integration line.
-          jend_res=halo_integrate+nrows_blend              !<--
+          jend_res=halo_integrate+nrows_blend              !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(2)+1                    !   Data limits in the BC file array
           jstart_bc=2                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !--
 !
           varname_update_bc=trim(field)//'_w_bottom'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='south')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(2)                     !   Data limits in the combined array
           jstart_res=dimsize_combined(4)-nrows_blend-2     !   including the BC/integration line.
-          jend_res=dimsize_combined(4)                     !<--
+          jend_res=dimsize_combined(4)                     !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(2)+1                    !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !--
 !
           varname_update_bc=trim(field)//'_w_top'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='east')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=halo_integrate+nrows_blend+1            !   Data limits in the combined array
           jstart_res=halo_integrate+1                      !   including the BC/integration line.
-          jend_res=dimsize_combined(4)-halo_integrate      !<--
+          jend_res=dimsize_combined(4)-halo_integrate      !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=halo_integrate+nrows_blend+2             !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(4)-2*halo_integrate     !<--
+          jend_bc=dimsize_combined(4)-2*halo_integrate     !--
 !
           varname_update_bc=trim(field)//'_w_left'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='west')then
-          istart_res=dimsize_combined(2)-halo_integrate-nrows_blend    !<--
+          istart_res=dimsize_combined(2)-halo_integrate-nrows_blend    !--
           iend_res=dimsize_combined(2)                     !   Data limits in the combined array
           jstart_res=halo_integrate+1                      !   including the BC/integration line.
-          jend_res=dimsize_combined(4)-halo_integrate      !<--
+          jend_res=dimsize_combined(4)-halo_integrate      !--
 !
-          istart_bc=1                                      !<--
+          istart_bc=1                                      !--
           iend_bc=istart_bc+halo_integrate+nrows_blend     !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(4)-2*halo_integrate     !<--
+          jend_bc=dimsize_combined(4)-2*halo_integrate     !--
 !
           varname_update_bc=trim(field)//'_w_right'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         endif
 !
-      else                                                 !<-- All mass-point variables
+      else                                                 !-- All mass-point variables
 !
         if(side=='north')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=1                                     !   including the BC/integration line.
-          jend_res=halo_integrate+nrows_blend              !<--
+          jend_res=halo_integrate+nrows_blend              !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(1)+1                    !   Data limits in the BC file array
           jstart_bc=2                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !--
 !
           varname_update_bc=trim(field)//'_bottom'
           call check(nf90_inq_varid(ncid_bc_new,trim(varname_update_bc),var_id_bc))
 !
         elseif(side=='south')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=dimsize_combined(4)-halo_integrate-nrows_blend+1  !   including the BC/integration line.
-          jend_res=dimsize_combined(4)                     !<--
+          jend_res=dimsize_combined(4)                     !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=dimsize_combined(1)+1                    !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !<--
+          jend_bc=jstart_bc+halo_integrate+nrows_blend-1   !--
 !
           varname_update_bc=trim(field)//'_top'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='east')then
-          istart_res=1                                     !<--
+          istart_res=1                                     !--
           iend_res=halo_integrate+nrows_blend              !   Data limits in the combined array
           jstart_res=halo_integrate+1                      !   including the BC/integration line.
-          jend_res=dimsize_combined(4)-halo_integrate      !<--
+          jend_res=dimsize_combined(4)-halo_integrate      !--
 !
-          istart_bc=2                                      !<--
+          istart_bc=2                                      !--
           iend_bc=halo_integrate+nrows_blend+1             !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(4)-2*halo_integrate     !<--
+          jend_bc=dimsize_combined(4)-2*halo_integrate     !--
 !
           varname_update_bc=trim(field)//'_left'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
 !
         elseif(side=='west')then
-          istart_res=dimsize_combined(1)-halo_integrate-nrows_blend+1  !<--
+          istart_res=dimsize_combined(1)-halo_integrate-nrows_blend+1  !--
           iend_res=dimsize_combined(1)                     !   Data limits in the combined array
           jstart_res=halo_integrate+1                      !   including the BC/integration line.
-          jend_res=dimsize_combined(4)-halo_integrate      !<--
+          jend_res=dimsize_combined(4)-halo_integrate      !--
 !
-          istart_bc=1                                      !<--
+          istart_bc=1                                      !--
           iend_bc=istart_bc+halo_integrate+nrows_blend-1   !   Data limits in the BC file array
           jstart_bc=1                                      !   including the BC/integration line.
-          jend_bc=dimsize_combined(4)-2*halo_integrate     !<--
+          jend_bc=dimsize_combined(4)-2*halo_integrate     !--
 !
           varname_update_bc=trim(field)//'_right'
           call check(nf90_inq_varid(ncid_bc_new,varname_update_bc,var_id_bc))
