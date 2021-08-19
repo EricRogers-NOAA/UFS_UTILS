@@ -44,6 +44,7 @@
 !***  be modified.
 !-----------------------------------------------------------------------
       use netcdf
+      use hold_check,only : check
 !-----------------------------------------------------------------------
       implicit none
 !-----------------------------------------------------------------------
@@ -558,28 +559,6 @@
       call check(nf90_close(ncid_grid_spec_new))
       call check(nf90_close(ncid_grid_tile))
 !
-!-----------------------------------------------------------------------
-      contains
-!-----------------------------------------------------------------------
-!
-!> This routine returns the status of a netcdf file
-!!
-!! @param[in] status  netcdf file status
-!! @authors Tom Black, Eric Rogers NCEP/EMC
-!
-      subroutine check(status)
-!
-      integer,intent(in) :: status
-!
-      if(status /= nf90_noerr) then
-        print *, trim(nf90_strerror(status))
-        stop "Stopped"
-      end if
-!
-      end subroutine check
-!
-!-----------------------------------------------------------------------
-!+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !-----------------------------------------------------------------------
 !
       end program prep_for_regional_DA

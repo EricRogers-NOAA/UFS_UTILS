@@ -18,8 +18,16 @@ execute_process( COMMAND ${CMAKE_COMMAND} -E copy
 execute_process( COMMAND ${CMAKE_COMMAND} -E copy
     ${CMAKE_CURRENT_SOURCE_DIR}/data/input.nml ${CMAKE_CURRENT_BINARY_DIR}/input.nml)
 execute_process( COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/grid_spec.nc ${CMAKE_CURRENT_BINARY_DIR}/grid_spec.nc)
+execute_process( COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/sfc_data.nc ${CMAKE_CURRENT_BINARY_DIR}/sfc_data.nc)
+execute_process( COMMAND ${CMAKE_COMMAND} -E copy
     ${CMAKE_CURRENT_SOURCE_DIR}/LSanSuppress.supp ${CMAKE_CURRENT_BINARY_DIR}/LSanSuppress.supp)
 
 add_executable(ftst_read_field_table ftst_read_field_table.F90)
 target_link_libraries(ftst_read_field_table create_expanded_restart_files_for_DA_lib)
 add_test(NAME lamda_utils-ftst_read_field_table COMMAND ftst_read_field_table)
+
+add_executable(ftst_check_grid_sfc ftst_check_grid_sfc.F90)
+target_link_libraries(ftst_check_grid_sfc prep_for_regional_DA_lib)
+add_test(NAME lamda_utils-ftst_check_grid_sfc COMMAND ftst_check_grid_sfc)
