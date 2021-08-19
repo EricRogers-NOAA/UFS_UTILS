@@ -35,8 +35,8 @@
 
  if (actual_ndims_sfc /= expected_ndims_sfc) stop 2
  if (actual_ndims_grid /= expected_ndims_grid) stop 3
- if (actual_vars_sfc /= expected_vars_sfc) stop 4
- if (actual_vars_grid /= expected_vars_grid) stop 5
+ if (actual_nvars_sfc /= expected_nvars_sfc) stop 4
+ if (actual_nvars_grid /= expected_nvars_grid) stop 5
 
  print*,'OK'
 
