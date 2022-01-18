@@ -55,6 +55,9 @@
 !
       integer :: ncid_core_new,ncid_tracer_new                             !< ncid_core_new: counter for variables in new fv_core file
                                                                            !! ncid_tracer_new: counter for variables in new fv_tracers file 
+!     integer :: nf90_netcdf4
+!
+      integer :: ichunk,jchunk,kchunk
 !
       integer,dimension(1:num_dims_core) :: dim_lengths_core               !< Hold the dimension lengths for the core restart file
       integer,dimension(1:num_dims_tracers) :: dim_lengths_tracers         !< Hold the dimension lengths for the tracers restart file
@@ -109,8 +112,9 @@
 !-----------------------------------------------------------------------
 !
       call check(nf90_create(path =filename_core_restart_new            &  !<-- Create the new core restart file.
-                            ,cmode=or(nf90_clobber,nf90_64bit_offset)   &
-                            ,ncid =ncid_core_new))
+       ,cmode=ior(ior(nf90_clobber,nf90_netcdf4),nf90_classic_model)    &
+!      ,cmode=ior(nf90_clobber,nf90_netcdf4),                           &
+       ,ncid =ncid_core_new))
 !
 !-----------------------------------------------------------------------
 !***  Increase the lateral dimensions' extents to include the 
@@ -129,6 +133,9 @@
       dim_lengths_core(4)=npy-1+2*halo
       dim_lengths_core(5)=npz
       dim_lengths_core(6)=nf90_unlimited                                   !-- Time
+      ichunk=dim_lengths_core(1)
+      jchunk=dim_lengths_core(4)
+      kchunk=npz
       write(0,*)' npx=',npx,' npy=',npy,' npz=',npz
 !
       do n=1,num_dims_core
@@ -183,6 +190,7 @@
                                ,xtype =NF90_FLOAT                       &
                                ,dimids=dimids(1:4)                      &
                                ,varid =var_id                           &
+                               ,chunksizes=(/ichunk,jchunk,kchunk,1/)   &
                                ))
         dimids(1)=1
         dimids(2)=4
@@ -198,6 +206,7 @@
                              ,xtype =NF90_FLOAT                         &
                              ,dimids=dimids(1:3)                        &
                              ,varid =var_id                             &
+                             ,chunksizes=(/ichunk,jchunk,1/)            &
                              ))
 !
       call check(nf90_enddef(ncid_core_new))                               !-- Terminate the define mode for the file.
@@ -208,8 +217,8 @@
 !-----------------------------------------------------------------------
 !
       call check(nf90_create(path =filename_tracer_restart_new          &  !-- Create the new tracer restart file.
-                            ,cmode=or(nf90_clobber,nf90_64bit_offset)   &
-                            ,ncid=ncid_tracer_new))
+       ,cmode=ior(ior(nf90_clobber,nf90_netcdf4),nf90_classic_model)    &
+       ,ncid=ncid_tracer_new))
 !
 !-----------------------------------------------------------------------
 !***  Increase the lateral dimensions' extents to include the 
@@ -271,6 +280,7 @@
                                ,xtype =NF90_FLOAT                       &
                                ,dimids=dimids(1:4)                      &
                                ,varid =var_id                           &
+                               ,chunksizes=(/ichunk,jchunk,kchunk,1/)   &
                                ))
       enddo
 !
