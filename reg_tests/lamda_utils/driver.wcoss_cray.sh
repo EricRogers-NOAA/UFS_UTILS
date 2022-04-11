@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 #
-# Run snow2mdl consistency test on WCOSS-Cray.
+# Run lamda_utils consistency test for move_DA_update_data code on WCOSS-Dell.
 #
 # Set $DATA to your working directory.  Set the project code (BSUB -P)
 # and queue (BSUB -q) as appropriate.
