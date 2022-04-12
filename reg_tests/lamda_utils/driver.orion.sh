@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 #
-# Run snow2mdl consistency test on Orion.
+# Run lamda_utils consistency test for move_DA_update_code on Orion.
 #
 # Set $DATA to your working directory.  Set the project code (SBATCH -A)
 # and queue (SBATCH -q) as appropriate.
@@ -18,7 +18,7 @@
 #
 #-----------------------------------------------------------------------------
 
-#SBATCH -J snow
+#SBATCH -J lamda_utils
 #SBATCH -A fv3-cpu
 #SBATCH --open-mode=truncate
 #SBATCH -o consistency.log
@@ -51,12 +51,12 @@ if [ "$UPDATE_BASELINE" = "TRUE" ]; then
 fi
 
 rm -fr $DATA
+mkdir -p $DATA
 
-export HOMEreg=/work/noaa/nems/role-nems/ufs_utils/reg_tests/snow2mdl
+export HOMEreg=/work/noaa/fv3-cam/erogers/ufs_utils/reg_tests/lamda_utils
+###export HOMEreg=/work/noaa/nems/role-nems/ufs_utils/reg_tests/snow2mdl
 export HOMEgfs=$PWD/../..
-export WGRIB=/apps/contrib/NCEPLIBS/orion/utils/grib_util.v1.2.0/exec/wgrib
-export WGRIB2=/apps/contrib/NCEPLIBS/orion/utils/grib_util.v1.2.0/exec/wgrib2
 
-./snow2mdl.sh
+./move_DA_update_data.sh
 
 exit 0
