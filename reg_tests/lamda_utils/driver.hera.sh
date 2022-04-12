@@ -2,7 +2,7 @@
 
 #-----------------------------------------------------------------------------
 #
-# Run snow2mdl consistency test on Hera.
+# Run lamda_utils consistency test for move_DA_update_code on Hera.
 #
 # Set $DATA to your working directory.  Set the project code (SBATCH -A)
 # and queue (SBATCH -q) as appropriate.
@@ -18,7 +18,7 @@
 #
 #-----------------------------------------------------------------------------
 
-#SBATCH -J snow
+#SBATCH -J lamda_utils
 #SBATCH -A fv3-cpu
 #SBATCH --open-mode=truncate
 #SBATCH -o consistency.log
@@ -37,7 +37,7 @@ module load build.$target.$compiler
 module list
 
 export DATA="${WORK_DIR:-/scratch2/NCEPDEV/stmp1/$LOGNAME}"
-export DATA="${DATA}/reg-tests/snow2mdl"
+export DATA="${DATA}/reg-tests/lamda_utils"
 
 #-----------------------------------------------------------------------------
 # Should not have to change anything below.
@@ -51,12 +51,12 @@ if [ "$UPDATE_BASELINE" = "TRUE" ]; then
 fi
 
 rm -fr $DATA
+mkdir -p $DATA
 
-export HOMEreg=/scratch1/NCEPDEV/nems/role.ufsutils/ufs_utils/reg_tests/snow2mdl
+###export HOMEreg=/scratch1/NCEPDEV/nems/role.ufsutils/ufs_utils/reg_tests/snow2mdl
+export HOMEreg=/scratch2/NCEPDEV/fv3-cam/noscrub/Eric.Rogers/role.ufsutils/ufs_utils/reg_tests/lamda_utils
 export HOMEgfs=$PWD/../..
-export WGRIB=/scratch2/NCEPDEV/nwprod/NCEPLIBS/utils/grib_util.v1.1.1/exec/wgrib
-export WGRIB2=/scratch2/NCEPDEV/nwprod/NCEPLIBS/utils/grib_util.v1.1.1/exec/wgrib2
 
-./snow2mdl.sh
+./move_DA_update_data.sh
 
 exit 0
