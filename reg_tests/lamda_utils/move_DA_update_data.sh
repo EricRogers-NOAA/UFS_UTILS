@@ -17,6 +17,8 @@ cp $HOMEreg/input_data/fv_tracer.res.tile1_new.nc .
 # Input original bndy file
 cp $HOMEreg/input_data/gfs_bndy.tile7.000.nc .
 
+NCCMP=${NCCMP:-$(which nccmp)}
+
 #Run the move_DA_create_data code
 
 $HOMEgfs/exec/move_DA_update_data 000
@@ -31,7 +33,8 @@ fi
 
 test_bc_failed=0
 
-cmp ${DATA}/gfs_bndy.tile7.000_gsi.nc $HOMEreg/baseline_data/gfs_bndy.tile7.000_gsi.nc
+$NCCMP -dmfqS ${DATA}/gfs_bndy.tile7.000_gsi.nc $HOMEreg/baseline_data/gfs_bndy.tile7.000_gsi.nc
+##cmp ${DATA}/gfs_bndy.tile7.000_gsi.nc $HOMEreg/baseline_data/gfs_bndy.tile7.000_gsi.nc
 iret_bc=$?
 if [ $iret_bc -ne 0 ]; then
   test_bc_failed=1
