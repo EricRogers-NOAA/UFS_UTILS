@@ -40,6 +40,8 @@ export DATA="${DATA}/reg-tests/lamda_utils"
 # Should not have to change anything below.
 #-----------------------------------------------------------------------------
 
+export NCCMP=/gpfs/hps3/emc/global/noscrub/George.Gayno/util/netcdf/nccmp
+
 export UPDATE_BASELINE="FALSE"
 #export UPDATE_BASELINE="TRUE"
 
