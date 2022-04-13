@@ -8,7 +8,7 @@
 # and queue (BSUB -q) as appropriate.
 #
 # Invoke the script as follows:  cat $script | bsub
-#
+##
 # Log output is placed in consistency.log.  A summary is
 # placed in summary.log
 #
