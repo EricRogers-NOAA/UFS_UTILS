@@ -50,6 +50,8 @@ if [ "$UPDATE_BASELINE" = "TRUE" ]; then
   source ../get_hash.sh
 fi
 
+export NCCMP=${NCCMP:-nccmp}
+
 rm -fr $DATA
 mkdir -p $DATA
 
